@@ -409,7 +409,7 @@ h1, .h1, h2, .h2, h3, .h3 {
 </tr>
 <tr class="odd">
 <td>status:</td>
-<td>Issued</td>
+<td>Draft</td>
 </tr>
 </tbody>
 </table>
@@ -451,7 +451,7 @@ h1, .h1, h2, .h2, h3, .h3 {
 <div id="introduction." class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Introduction.</h1>
 <p>This is collection of SQL queries that DPCG endorses and will maintain their usability as long as possible. This notebook with all queries below are also part of Continuous Integration efforts that DPCG will treat as any other software project.</p>
-<p>Queries below are self-contained. They show all aspects of the system usage, from input to results, validation, visualisation.</p>
+<p>Queries below are self-contained and must work with DPCG Gaia database based on Postgres-XL/XZ/TBase. They show all aspects of the system usage, from input to results, validation, visualisation.</p>
 </div>
 <div id="derived-timeseries" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Derived Timeseries</h1>
@@ -524,18 +524,70 @@ h1, .h1, h2, .h2, h3, .h3 {
 <h2><span class="header-section-number">4.1</span> Sample from a single table</h2>
 <p>Using <strong><em>tablesample</em></strong> SQL keyword we scan pages of the tables obtaining quasi-random sampling. Keep in mind <strong><em>tablesample</em></strong> is always applied <strong>before</strong> the where or join clauses.</p>
 <p>From our source table</p>
-<pre><code>-- calcualte required percentage 
--- select round((10^6*100)/(size),4) perc from catalog where fname = &#39;GAIA_DR3_ALL&#39;
--- 0.0392 for 1M sample
-
-select 
-  sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(&#39;Gaia&#39;,&#39;GAIA_PHOT_G&#39;)) -- convert to mag
-from source tablesample bernoulli(0.0392)
-limit 10^6
-</code></pre>
-<p>takes 3 secs, but is quasi-random</p>
-<p>Calculated G Mag on the fly using plR function.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sql fold-show"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) g_mag<span class="co">-- convert to mag</span></span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sql fold-show"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- calculate required percentage based on the input set size.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- select round((10^6*100)/(size),4) perc from catalog where fname = &#39;GAIA_DR3_ALL&#39;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- 0.0392 for 1M sample</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) <span class="co">-- convert to mag using R function</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample bernoulli(<span class="fl">0.0392</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">6</span></span></code></pre></div>
+<div class="knitsql-table">
+<table>
+<caption>Displaying records 1 - 10</caption>
+<thead>
+<tr class="header">
+<th align="right">sourceid</th>
+<th align="right">r_fluxtomagval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">143057874503739264</td>
+<td align="right">20.42425</td>
+</tr>
+<tr class="even">
+<td align="right">142074597574141696</td>
+<td align="right">19.44163</td>
+</tr>
+<tr class="odd">
+<td align="right">84645597722303360</td>
+<td align="right">22.54260</td>
+</tr>
+<tr class="even">
+<td align="right">205233332909637120</td>
+<td align="right">19.98034</td>
+</tr>
+<tr class="odd">
+<td align="right">188132869081627776</td>
+<td align="right">14.71783</td>
+</tr>
+<tr class="even">
+<td align="right">56820360037995520</td>
+<td align="right">21.14828</td>
+</tr>
+<tr class="odd">
+<td align="right">250510461531556608</td>
+<td align="right">20.00099</td>
+</tr>
+<tr class="even">
+<td align="right">167431676470447104</td>
+<td align="right">21.87788</td>
+</tr>
+<tr class="odd">
+<td align="right">150042659558455680</td>
+<td align="right">23.06530</td>
+</tr>
+<tr class="even">
+<td align="right">193573939811160832</td>
+<td align="right">22.84400</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>takes 3 secs, but is quasi-random.</p>
+<p>Calculated G Mag on the fly using plR function:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sql fold-show"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) g_mag <span class="co">-- convert to mag</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample <span class="kw">system</span>(<span class="fl">0.0392</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">2</span></span></code></pre></div>
 <p>This is much slower, but might statistically more sound, related to the sampling method (Bernoulli) :</p>

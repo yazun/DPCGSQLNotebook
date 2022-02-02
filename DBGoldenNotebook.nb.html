@@ -488,64 +488,122 @@ h1, .h1, h2, .h2, h3, .h3 {
 <div id="introduction." class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Introduction.</h1>
 <p>This is collection of SQL queries that DPCG endorses and will maintain their usability as long as possible. This notebook with all queries below are also part of Continuous Integration efforts that DPCG will treat as any other software project.</p>
-<p>Queries below are self-contained. They show all aspects of the system usage, from input to results, validation, visualisation.</p>
+<p>Queries below are self-contained and must work with DPCG Gaia database based on Postgres-XL/XZ/TBase. They show all aspects of the system usage, from input to results, validation, visualisation.</p>
 </div>
-<div id="derived-timeseries" class="section level1" number="3">
-<h1><span class="header-section-number">3</span> Derived Timeseries</h1>
+<div id="setup-prerequisisties" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Setup, Prerequisisties</h1>
+<p>You should have your <code>$HOME/.pgpass</code> file set up with non-world readable mask (0600). Similarly as for psql and other PostgreSQL clients. dpcgR R package is a wrpper around Postgres R client and gives number of R primitives for DB interaction and visualisations based on OM objects.</p>
+</div>
+<div id="derived-timeseries" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Derived Timeseries</h1>
 <p>In order to get derived timeseries for a selection of sourceids, runid and operator name we can:</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG5zZWxlY3QgKGRyM19vcHNfY3MzNi5vcF90ZXN0MShzb3VyY2VpZCwnUmVtb3ZlT3V0bGllcnNGYWludEFuZEJyaWdodE9wZXJhdG9yX0ZPVl9HJykpLiogZnJvbVxuKHNlbGVjdCAgc291cmNlaWQgZnJvbSBkcjNfb3BzX2NzMzZfbXYudl9maW5hbF9kcjNfZXhwb3J0X2hlbHBlciAgbGltaXQgNSkgO1xuYGBgIn0= -->
-<div class="sourceCode" id="cb1"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> (dr3_ops_cs36.op_test1(sourceid,<span class="st">&#39;RemoveOutliersFaintAndBrightOperator_FOV_G&#39;</span>)).<span class="op">*</span> <span class="kw">from</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">select</span>  sourceid <span class="kw">from</span> dr3_ops_cs36_mv.v_final_dr3_export_helper  <span class="kw">limit</span> <span class="dv">5</span>) ;</span></code></pre></div>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>The function takes run configuration, caches it for the session and executes VariFrameowrk pipeline in plJava VM.</p>
-</div>
-<div id="sampling" class="section level1" number="4">
-<h1><span class="header-section-number">4</span> Sampling</h1>
-<div id="sample-from-a-single-table" class="section level2" number="4.1">
-<h2><span class="header-section-number">4.1</span> Sample from a single table</h2>
-<p>Using <strong><em>tablesample</em></strong> SQL keyword we scan pages of the tables obtaining quasi-random sampling. Keep in mind <strong><em>tablesample</em></strong> is always applied <strong>before</strong> the where or join clauses.</p>
-<p>From our source table</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG4tLSBjYWxjdWxhdGUgcmVxdWlyZWQgcGVyY2VudGFnZSBiYXNlZCBvbiB0aGUgaW5wdXQgc2V0IHNpemUuXG4tLSBzZWxlY3Qgcm91bmQoKDEwXjYqMTAwKS8oc2l6ZSksNCkgcGVyYyBmcm9tIGNhdGFsb2cgd2hlcmUgZm5hbWUgPSAnR0FJQV9EUjNfQUxMJ1xuLS0gMC4wMzkyIGZvciAxTSBzYW1wbGVcblxuc2VsZWN0IFxuICBzb3VyY2VpZCwgcl9mbHV4dG9NYWdWYWwoZ2ZsdXhtZWFuLGdldHplcm9wb2ludCgnR2FpYScsJ0dBSUFfUEhPVF9HJykpIC0tIGNvbnZlcnQgdG8gbWFnIHVzaW5nIFIgZnVuY3Rpb25cbmZyb20gc291cmNlIHRhYmxlc2FtcGxlIGJlcm5vdWxsaSgwLjAzOTIpXG5saW1pdCAxMF42XG5cbmBgYCJ9 -->
-<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- calculate required percentage based on the input set size.</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- select round((10^6*100)/(size),4) perc from catalog where fname = &#39;GAIA_DR3_ALL&#39;</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- 0.0392 for 1M sample</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> </span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) <span class="co">-- convert to mag using R function</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample bernoulli(<span class="fl">0.0392</span>)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">6</span></span></code></pre></div>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>takes 3 secs, but is quasi-random.</p>
-<p>Calculated G Mag on the fly using plR function:</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG5zZWxlY3Qgc291cmNlaWQsIHJfZmx1eHRvTWFnVmFsKGdmbHV4bWVhbixnZXR6ZXJvcG9pbnQoJ0dhaWEnLCdHQUlBX1BIT1RfRycpKSBnX21hZyAtLSBjb252ZXJ0IHRvIG1hZ1xuZnJvbSBzb3VyY2UgdGFibGVzYW1wbGUgc3lzdGVtKDAuMDM5MilcbmxpbWl0IDEwXjJcbmBgYCJ9 -->
-<div class="sourceCode" id="cb3"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) g_mag <span class="co">-- convert to mag</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample <span class="kw">system</span>(<span class="fl">0.0392</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">2</span></span></code></pre></div>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This is much slower, but might statistically more sound, related to the sampling method (Bernoulli) :</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG4gc2VsZWN0IHNvdXJjZWlkLCByX2ZsdXh0b01hZ1ZhbChnZmx1eG1lYW4sZ2V0emVyb3BvaW50KCdHYWlhJywnR0FJQV9QSE9UX0cnKSkgIGdfbWFnIC0tIGNvbnZlcnQgdG8gbWFnXG5mcm9tIHNvdXJjZSB0YWJsZXNhbXBsZSBiZXJub3VsbGkoMC4wMzkyKVxubGltaXQgMTBeMlxuYGBgIn0= -->
-<div class="sourceCode" id="cb4"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a> <span class="kw">select</span> sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>))  g_mag <span class="co">-- convert to mag</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample bernoulli(<span class="fl">0.0392</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">2</span></span></code></pre></div>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG5gYGBzcWxcbnNlbGVjdCBzb3VyY2VpZCwgcl9mbHV4dG9NYWdWYWwoZ2ZsdXhtZWFuLGdldHplcm9wb2ludCgnR2FpYScsJ0dBSUFfUEhPVF9HJykpIGdfbWFnIC0tIGNvbnZlcnQgdG8gbWFnXG5mcm9tIHNvdXJjZSB0YWJsZXNhbXBsZSBzeXN0ZW0oMC4wMzkyKVxubGltaXQgMTBeMlxuYGBgXG5gYGAifQ== -->
+<div class="sourceCode" id="cb1"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>```sql</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(<span class="st">&#39;Gaia&#39;</span>,<span class="st">&#39;GAIA_PHOT_G&#39;</span>)) g_mag <span class="co">-- convert to mag</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> <span class="kw">source</span> tablesample <span class="kw">system</span>(<span class="fl">0.0392</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">limit</span> <span class="dv">10</span>^<span class="dv">2</span></span></code></pre></div>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+The function takes run configuration, caches it for the session and executes VariFrameowrk pipeline in plJava VM.
+
+
+# Sampling 
+## Sample from a single table
+
+Using **_tablesample_** SQL keyword we scan pages of the tables obtaining quasi-random sampling. 
+Keep in mind **_tablesample_** is always applied **before** the where or join clauses.
+
+From our source table
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG5gYGBzcWxcbiBzZWxlY3Qgc291cmNlaWQsIHJfZmx1eHRvTWFnVmFsKGdmbHV4bWVhbixnZXR6ZXJvcG9pbnQoJ0dhaWEnLCdHQUlBX1BIT1RfRycpKSAgZ19tYWcgLS0gY29udmVydCB0byBtYWdcbmZyb20gc291cmNlIHRhYmxlc2FtcGxlIGJlcm5vdWxsaSgwLjAzOTIpXG5saW1pdCAxMF4yXG5gYGBcbmBgYCJ9 --&gt;
+
+```sql
+```sql
+ select sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(&#39;Gaia&#39;,&#39;GAIA_PHOT_G&#39;))  g_mag -- convert to mag
+from source tablesample bernoulli(0.0392)
+limit 10^2</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+    
+takes 3 secs, but is quasi-random.
+
+Calculated G Mag on the fly using plR function:
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG5gYGBzcWxcbnNlbGVjdFxuc291cmNlaWQsXG5hbHBoYSwgYWxwaGFzdGFyZXJyb3IsIGRlbHRhLCBkZWx0YWVycm9yLCB2YXJwaSwgdmFycGllcnJvciwgbXVhbHBoYXN0YXIsIG11YWxwaGFzdGFyZXJyb3IsIG11ZGVsdGEsIG11ZGVsdGFlcnJvciwgcmFkaWFsdmVsb2NpdHksIHJhZGlhbHZlbG9jaXR5ZXJyb3IsXG4gIHJfcHNldWRvX3dhdmVsZW5ndGgoXG4gKGJwcnApLmJwcmVmYWxwb3NcbiAgLDUwMCwzMCkgYXMgcHNldWRvX3dhdmVsZW5ndGhcbiAsKGJwcnApLmJwc3BlY3RyYWxzaGFwZVxuICwoYnBycCkuYnBvYnN0aW1lXG5mcm9tIGRyM19vcHNfY3MzNi50c3NwZWN0cmFcbmpvaW4gc291cmNlIHVzaW5nIChzb3VyY2VpZClcbmpvaW4gbGF0ZXJhbCAoc2VsZWN0ICBnZXRzcGVjdHJhKHNwZWMpIGJwcnApIGJwcnAgIG9uIHRydWVcbndoZXJlXG4gY2F0YWxvZ2lkID0gZ2V0bWFpbmNhdGFsb2coKVxuYW5kIHNvdXJjZWlkID0gMjkyNjgyNTQzMTE3MDA5MzE4NFxuXG5gYGBcbmBgYCJ9 --&gt;
+
+```sql
+```sql
+select
+sourceid,
+alpha, alphastarerror, delta, deltaerror, varpi, varpierror, mualphastar, mualphastarerror, mudelta, mudeltaerror, radialvelocity, radialvelocityerror,
+  r_pseudo_wavelength(
+ (bprp).bprefalpos
+  ,500,30) as pseudo_wavelength
+ ,(bprp).bpspectralshape
+ ,(bprp).bpobstime
+from dr3_ops_cs36.tsspectra
+join source using (sourceid)
+join lateral (select  getspectra(spec) bprp) bprp  on true
+where
+ catalogid = getmaincatalog()
+and sourceid = 2926825431170093184
+</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+This is much slower, but might statistically more sound, related to the sampling method (Bernoulli) :
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgc3FsXG4gc2VsZWN0IHNvdXJjZWlkLCByX2ZsdXh0b01hZ1ZhbChnZmx1eG1lYW4sZ2V0emVyb3BvaW50KCdHYWlhJywnR0FJQV9QSE9UX0cnKSkgIGdfbWFnIC0tIGNvbnZlcnQgdG8gbWFnXG5mcm9tIHNvdXJjZSB0YWJsZXNhbXBsZSBiZXJub3VsbGkoMC4wMzkyKVxubGltaXQgMTBeMlxuYGBgIn0= --&gt;
+
+```sql
+ select sourceid, r_fluxtoMagVal(gfluxmean,getzeropoint(&#39;Gaia&#39;,&#39;GAIA_PHOT_G&#39;))  g_mag -- convert to mag
+from source tablesample bernoulli(0.0392)
+limit 10^2</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Both methods are very IO intensive.</p>
-</div>
 </div>
 <div id="spectra-handling" class="section level1" number="5">
 <h1><span class="header-section-number">5</span> Spectra handling</h1>
@@ -571,10 +629,16 @@ h1, .h1, h2, .h2, h3, .h3 {
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Currently we do not support multidimensional sets of spectra returned: the function returns unnested spectra already, that might need ordering if more sources are involved.</p>
+</div>
+<div id="appendix-db-functions-available" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Appendix: DB functions available</h1>
+</div>
+<div id="appendix" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Appendix:</h1>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiRFBDRyBTUUwgR29sZGVuIERhdGFiYXNlIE5vdGVib29rLiIKYXV0aG9yOiAiS3J6eXN6dG9mIE5pZW5hcnRvd2ljeiIKb3V0cHV0OgogIGh0bWxfZG9jdW1lbnQ6CiAgICBmaWdfaGVpZ2h0OiAxMAogICAgZmlnX3dpZHRoOiAxOAogICAgZGZfcHJpbnQ6IHBhZ2VkCiAgICBjb2RlX2ZvbGRpbmc6IGhpZGUKICAgIHRvYzogeWVzCiAgICB0b2NfZmxvYXQ6IHllcwogICAgbnVtYmVyX3NlY3Rpb25zOiB5ZXMKICAgIHRoZW1lOiBzcGFjZWxhYgogICAgaGlnaGxpZ2h0OiBweWdtZW50cwogICAgYXMuaWZyYW1lOiB5ZXMKICBodG1sX25vdGVib29rOgogICAgYXMuaWZyYW1lOiB5ZXMKICAgIGNvZGVfZm9sZGluZzogc2hvdwogICAgZmlnX2hlaWdodDogMTAKICAgIGZpZ193aWR0aDogMTgKICAgIGhpZ2hsaWdodDogcHlnbWVudHMKICAgIG51bWJlcl9zZWN0aW9uczogeWVzCiAgICB0aGVtZTogc3BhY2VsYWIKICAgIHRvYzogeWVzCiAgICB0b2NfZmxvYXQ6IHllcwpwYXJhbXM6CiAgaW5SdW5JZDogMzg1MgogIGhvc3RuYW1lOiBnYWlhZGIxMmkKICBkYlBvcnQ6IDU1NDMxCiAgZGJVc2VyOiBuaWVuYXJ0b19sb2NhbAogIHRtcFNjaGVtYTogZHIzX29wc19jczM2X3RtcAogIHRlbXBsYXRlTmFtZTogRGVmYXVsdAotLS0KCmBgYHs9aHRtbH0KPCEtLQoKRXhwbGFuYXRpb24gb2YgdGhlIGFib3ZlIHBhcmFtcyBzZWN0aW9uLgpUaGVzZSBwYXJhbWV0ZXJzIGFyZSBzZXQgYW5kIGNhbiBiZSBvdmVycmlkZW4gdmlhIHRoZSBjb21tYW5kIGxpbmUgaWYga25pdHRpbmcgdmlhIFZhcmlEYXNoYm9hcmQgb3IgdGVybWluYWwuCkV4Y2VwdCBydW5OYW1lLCBhbGwgcGFyYW1ldGVycyBhcmUgcmVxdWlyZWQuCgpDaGFuZ2UgZGJVc2VyIHRvIHlvdXIgREIgdXNlciB3aGVuIHJ1bm5pbmcgZWRpdGluZyB0aGlzIGZpbGUgaW4gUlN0dWRpby4KCi0tPgpgYGAKYGBgez1odG1sfQo8c3R5bGU+CiAgICBib2R5IC5tYWluLWNvbnRhaW5lciB7CiAgICAgICAgbWF4LXdpZHRoOiA4MCU7CiAgICAgICAgbWFyZ2luLWxlZnQ6IGF1dG87CiAgICAgICAgbWFyZ2luLXJpZ2h0OiBhdXRvOwp9CgpoMSwgLmgxLCBoMiwgLmgyLCBoMywgLmgzIHsKICAgIG1hcmdpbi10b3A6IDg0cHg7Cn0KCjwvc3R5bGU+CmBgYApgYGB7ciBzZXR1cCwgZWNobz1GQUxTRSwgY2FjaGU9RkFMU0UsIG1lc3NhZ2U9RkFMU0V9CiMgbG9hZCBoZWxwZXIgRFBDRyBwYWNrYWdlCnJlcXVpcmUoZHBjZ1IpCgpyZXF1aXJlKGRwbHlyKQpyZXF1aXJlKGdsdWUpCnJlcXVpcmUoYml0NjQpCnJlcXVpcmUodGliYmxlKQpyZXF1aXJlKHBsb3RseSkKcmVxdWlyZSh2aXJpZGlzKQpyZXF1aXJlKFJDb2xvckJyZXdlcikKCm9wdGlvbnMod2lkdGggPSAxNjAwKQpvcHRpb25zKHdhcm4gPSAwLCBjYWNoZT1UUlVFLCBhdXRvZGVwPVRSVUUsIHNjaXBlbiA9IDk5OSkKCiMgQ29ubmVjdCB0byBEQiB0aGVuIHNldCB0aGUgZGVmYXVsdCBjb25uZWN0aW9uIGZvciByLW5vdGVib29rIGNodW5rcyBzbyB3ZSBkbyBub3QgaGF2ZSB0byBwcm92aWRlIGl0IGV2ZXJ5IHRpbWUgd2l0aCB7c3FsIGNvbm5lY3Rpb24gPSBjb25ufQpjb25uPC1kcGNnUjo6Y29ubmVjdChob3N0bmFtZT1wYXJhbXMkaG9zdG5hbWUscG9ydD1wYXJhbXMkZGJQb3J0LCB1c2VyID0gcGFyYW1zJGRiVXNlcikKCiMgY29ubmVjdGlvbiB0byBiZSB1c2VkIGJ5IHRoZSBzcWwgY2h1bmtzLCBkZWZhdWx0IHNpemUgb2YgdGhlIHBsb3RzCmtuaXRyOjpvcHRzX2NodW5rJHNldChjb25uZWN0aW9uID0gImNvbm4iLCBmaWcuaGVpZ2h0PTEwLCBmaWcud2lkdGg9MTIsIAogICAgICAgICAgICAgICAgICAgICAgY2FjaGU9RkFMU0UsCiAgICAgICAgICAgICAgICAgICAgICBhdXRvZGVwPVRSVUUsICAKICAgICAgICAgICAgICAgICAgICAgIGVycm9yID0gVFJVRSwgIyBkbyBub3QgaW50ZXJydXB0IGluIGNhc2Ugb2YgZXJyb3JzCiAgICAgICAgICAgICAgICAgICAgICBkZXYgPSAicmFnZ19wbmciLAogICAgICAgICAgICAgICAgICAgICAgY2xhc3Muc291cmNlID0gJ2ZvbGQtc2hvdycKICAgICAgICAgICAgICAgICAgICAgICkKCmBgYApfX18KPGNlbnRlcj4KIVtdKC4vUmVzb3VyY2VzL2RwYWNfbG9nby5wbmcpe3dpZHRoPTUwJX0KCgpfX18KCjxmb250IHNpemU9MjAgY29sb3I9IkJMVUUiPmByIHJtYXJrZG93bjo6bWV0YWRhdGEkdGl0bGVgIDwvZm9udD4KCl9fXwoKPC9jZW50ZXI+Cgo8Zm9udCBzaXplPTEwPgoKfCAgICAgICAgICAgICAgfCAgICAgICAgICAgICAgfAp8LS0tLS0tLS0tLS0tLSB8IC0tLS0tLS0tLS0tLS18CnxQcmVwYXJlZCBieTogIHwgYHIgcm1hcmtkb3duOjptZXRhZGF0YSRhdXRob3JgfAp8QXBwcm92ZWQgYnk6ICB8IExhdXJlbnQgRXllciB8CnxyZWZlcmVuY2U6ICAgIHwgR0FJQS1ERy1UTi1HRU4tS04tMDEzfAp8aXNzdWU6ICAgICAgICB8IDAxfAp8cmV2aXNpb246ICAgICB8IDF8CnxkYXRlOiAgICAgICAgIHwgYHIgU3lzLkRhdGUoKWB8CnxzdGF0dXM6ICAgICAgIHwgRHJhZnQgfAo8L2ZvbnQ+CgotLS0KCiMgRG9jdW1lbnQgSGlzdG9yeQoKPGZvbnQgc2l6ZT05PgoKfElzc3VlICB8IFJldmlzaW9uIHwgRGF0ZSAgICAgICAgfCBBdXRob3IgICB8IENvbW1lbnQgICAgICAgICB8CnwtLS0tLS0gfCAtLS0tLS0tLS18IC0tLS0tLS0tLS0tIHwtLS0tLS0tLS0gfC0tLS0tLS0tLS0tLS0tLS0tfAp8RCAgICAgIHwgICAgICAgMSAgfCAyMDIyLTAxLTEwICB8S04gICAgICAgIHwgSW5pdGlhbCB2ZXJzaW9uIHwKfEQgICAgICB8ICAgICAgIDIgIHwgMjAyMi0wMS0zMSAgfEtOICAgICAgICB8IFBMSmF2YSB0cyBvcGVyYXRvcnMgYWRkZWQgfAoKPC9mb250PgoKLS0tCgojIEludHJvZHVjdGlvbi4KClRoaXMgaXMgY29sbGVjdGlvbiBvZiBTUUwgcXVlcmllcyB0aGF0IERQQ0cgZW5kb3JzZXMgYW5kIHdpbGwgbWFpbnRhaW4gdGhlaXIgdXNhYmlsaXR5IGFzIGxvbmcgYXMgcG9zc2libGUuIApUaGlzIG5vdGVib29rIHdpdGggYWxsIHF1ZXJpZXMgYmVsb3cgYXJlIGFsc28gcGFydCBvZiBDb250aW51b3VzIEludGVncmF0aW9uIGVmZm9ydHMgdGhhdCBEUENHIHdpbGwgdHJlYXQgYXMgYW55IG90aGVyIHNvZnR3YXJlIHByb2plY3QuCgpRdWVyaWVzIGJlbG93IGFyZSBzZWxmLWNvbnRhaW5lZC4KVGhleSBzaG93IGFsbCBhc3BlY3RzIG9mIHRoZSBzeXN0ZW0gdXNhZ2UsIGZyb20gaW5wdXQgdG8gcmVzdWx0cywgdmFsaWRhdGlvbiwgdmlzdWFsaXNhdGlvbi4KCgoKIyBEZXJpdmVkIFRpbWVzZXJpZXMgCgoKSW4gb3JkZXIgdG8gZ2V0IGRlcml2ZWQgdGltZXNlcmllcyBmb3IgYSBzZWxlY3Rpb24gb2Ygc291cmNlaWRzLCBydW5pZCBhbmQgb3BlcmF0b3IgbmFtZSB3ZSBjYW46CgpgYGB7c3FsIHNxbF90c19kZXJfMX0Kc2VsZWN0IChkcjNfb3BzX2NzMzYub3BfdGVzdDEoc291cmNlaWQsJ1JlbW92ZU91dGxpZXJzRmFpbnRBbmRCcmlnaHRPcGVyYXRvcl9GT1ZfRycpKS4qIGZyb20KKHNlbGVjdCAgc291cmNlaWQgZnJvbSBkcjNfb3BzX2NzMzZfbXYudl9maW5hbF9kcjNfZXhwb3J0X2hlbHBlciAgbGltaXQgNSkgOwpgYGAKClRoZSBmdW5jdGlvbiB0YWtlcyBydW4gY29uZmlndXJhdGlvbiwgY2FjaGVzIGl0IGZvciB0aGUgc2Vzc2lvbiBhbmQgZXhlY3V0ZXMgVmFyaUZyYW1lb3dyayBwaXBlbGluZSBpbiBwbEphdmEgVk0uCgoKIyBTYW1wbGluZyAKIyMgU2FtcGxlIGZyb20gYSBzaW5nbGUgdGFibGUKClVzaW5nICoqX3RhYmxlc2FtcGxlXyoqIFNRTCBrZXl3b3JkIHdlIHNjYW4gcGFnZXMgb2YgdGhlIHRhYmxlcyBvYnRhaW5pbmcgcXVhc2ktcmFuZG9tIHNhbXBsaW5nLiAKS2VlcCBpbiBtaW5kICoqX3RhYmxlc2FtcGxlXyoqIGlzIGFsd2F5cyBhcHBsaWVkICoqYmVmb3JlKiogdGhlIHdoZXJlIG9yIGpvaW4gY2xhdXNlcy4KCkZyb20gb3VyIHNvdXJjZSB0YWJsZQpgYGB7c3FsIHNhbXBsZV8xfQotLSBjYWxjdWxhdGUgcmVxdWlyZWQgcGVyY2VudGFnZSBiYXNlZCBvbiB0aGUgaW5wdXQgc2V0IHNpemUuCi0tIHNlbGVjdCByb3VuZCgoMTBeNioxMDApLyhzaXplKSw0KSBwZXJjIGZyb20gY2F0YWxvZyB3aGVyZSBmbmFtZSA9ICdHQUlBX0RSM19BTEwnCi0tIDAuMDM5MiBmb3IgMU0gc2FtcGxlCgpzZWxlY3QgCiAgc291cmNlaWQsIHJfZmx1eHRvTWFnVmFsKGdmbHV4bWVhbixnZXR6ZXJvcG9pbnQoJ0dhaWEnLCdHQUlBX1BIT1RfRycpKSAtLSBjb252ZXJ0IHRvIG1hZyB1c2luZyBSIGZ1bmN0aW9uCmZyb20gc291cmNlIHRhYmxlc2FtcGxlIGJlcm5vdWxsaSgwLjAzOTIpCmxpbWl0IDEwXjYKCmBgYAoJCnRha2VzIDMgc2VjcywgYnV0IGlzIHF1YXNpLXJhbmRvbS4KCkNhbGN1bGF0ZWQgRyBNYWcgb24gdGhlIGZseSB1c2luZyBwbFIgZnVuY3Rpb246CgpgYGB7c3FsIHNhbXBsZSwgb3V0cHV0LnZhcj0icmVzdWx0In0Kc2VsZWN0IHNvdXJjZWlkLCByX2ZsdXh0b01hZ1ZhbChnZmx1eG1lYW4sZ2V0emVyb3BvaW50KCdHYWlhJywnR0FJQV9QSE9UX0cnKSkgZ19tYWcgLS0gY29udmVydCB0byBtYWcKZnJvbSBzb3VyY2UgdGFibGVzYW1wbGUgc3lzdGVtKDAuMDM5MikKbGltaXQgMTBeMgpgYGAKClRoaXMgaXMgbXVjaCBzbG93ZXIsIGJ1dCBtaWdodCBzdGF0aXN0aWNhbGx5IG1vcmUgc291bmQsIHJlbGF0ZWQgdG8gdGhlIHNhbXBsaW5nIG1ldGhvZCAoQmVybm91bGxpKSA6CgpgYGB7c3FsIHNhbXBsZV8yLCBvdXRwdXQudmFyPSJyZXN1bHQifQogc2VsZWN0IHNvdXJjZWlkLCByX2ZsdXh0b01hZ1ZhbChnZmx1eG1lYW4sZ2V0emVyb3BvaW50KCdHYWlhJywnR0FJQV9QSE9UX0cnKSkgIGdfbWFnIC0tIGNvbnZlcnQgdG8gbWFnCmZyb20gc291cmNlIHRhYmxlc2FtcGxlIGJlcm5vdWxsaSgwLjAzOTIpCmxpbWl0IDEwXjIKYGBgCgpCb3RoIG1ldGhvZHMgYXJlIHZlcnkgSU8gaW50ZW5zaXZlLgoKCiMgU3BlY3RyYSBoYW5kbGluZwoKSW4gb3JkZXIgdG8gZmV0Y2ggQlAvUlAgc3BlY3RyYSBmb3IgYSBzaW5nbGUgc291cmNlIGV4ZWN1dGU6CgpgYGB7c3FsIHNwZWN0cmFfc2luZ2xlX3NvdXJjZX0Kc2VsZWN0CnNvdXJjZWlkLAphbHBoYSwgYWxwaGFzdGFyZXJyb3IsIGRlbHRhLCBkZWx0YWVycm9yLCB2YXJwaSwgdmFycGllcnJvciwgbXVhbHBoYXN0YXIsIG11YWxwaGFzdGFyZXJyb3IsIG11ZGVsdGEsIG11ZGVsdGFlcnJvciwgcmFkaWFsdmVsb2NpdHksIHJhZGlhbHZlbG9jaXR5ZXJyb3IsCiAgcl9wc2V1ZG9fd2F2ZWxlbmd0aCgKIChicHJwKS5icHJlZmFscG9zCiAgLDUwMCwzMCkgYXMgcHNldWRvX3dhdmVsZW5ndGgKICwoYnBycCkuYnBzcGVjdHJhbHNoYXBlCiAsKGJwcnApLmJwb2JzdGltZQpmcm9tIGRyM19vcHNfY3MzNi50c3NwZWN0cmEKam9pbiBzb3VyY2UgdXNpbmcgKHNvdXJjZWlkKQpqb2luIGxhdGVyYWwgKHNlbGVjdCAgZ2V0c3BlY3RyYShzcGVjKSBicHJwKSBicHJwICBvbiB0cnVlCndoZXJlCiBjYXRhbG9naWQgPSBnZXRtYWluY2F0YWxvZygpCmFuZCBzb3VyY2VpZCA9IDI5MjY4MjU0MzExNzAwOTMxODQKCmBgYAoKQ3VycmVudGx5IHdlIGRvIG5vdCBzdXBwb3J0IG11bHRpZGltZW5zaW9uYWwgc2V0cyBvZiBzcGVjdHJhIHJldHVybmVkOiB0aGUgZnVuY3Rpb24gcmV0dXJucyB1bm5lc3RlZCBzcGVjdHJhIGFscmVhZHksIHRoYXQgbWlnaHQgbmVlZCBvcmRlcmluZyBpZiBtb3JlIHNvdXJjZXMgYXJlIGludm9sdmVkLg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiRFBDRyBTUUwgR29sZGVuIERhdGFiYXNlIE5vdGVib29rLiIKYXV0aG9yOiAiS3J6eXN6dG9mIE5pZW5hcnRvd2ljeiIKb3V0cHV0OgogIGh0bWxfZG9jdW1lbnQ6CiAgICBmaWdfaGVpZ2h0OiAxMAogICAgZmlnX3dpZHRoOiAxOAogICAgZGZfcHJpbnQ6IHBhZ2VkCiAgICBjb2RlX2ZvbGRpbmc6IGhpZGUKICAgIHRvYzogeWVzCiAgICB0b2NfZmxvYXQ6IHllcwogICAgbnVtYmVyX3NlY3Rpb25zOiB5ZXMKICAgIHRoZW1lOiBzcGFjZWxhYgogICAgaGlnaGxpZ2h0OiBweWdtZW50cwogICAgYXMuaWZyYW1lOiB5ZXMKICBodG1sX25vdGVib29rOgogICAgYXMuaWZyYW1lOiB5ZXMKICAgIGNvZGVfZm9sZGluZzogc2hvdwogICAgZmlnX2hlaWdodDogMTAKICAgIGZpZ193aWR0aDogMTgKICAgIGhpZ2hsaWdodDogcHlnbWVudHMKICAgIG51bWJlcl9zZWN0aW9uczogeWVzCiAgICB0aGVtZTogc3BhY2VsYWIKICAgIHRvYzogeWVzCiAgICB0b2NfZmxvYXQ6IHllcwpwYXJhbXM6CiAgaW5SdW5JZDogMzg1MgogIGhvc3RuYW1lOiBnYWlhZGIxMmkKICBkYlBvcnQ6IDU1NDMxCiAgZGJVc2VyOiBuaWVuYXJ0b19sb2NhbAogIHRtcFNjaGVtYTogZHIzX29wc19jczM2X3RtcAogIHRlbXBsYXRlTmFtZTogRGVmYXVsdAotLS0KCmBgYHs9aHRtbH0KPCEtLQoKRXhwbGFuYXRpb24gb2YgdGhlIGFib3ZlIHBhcmFtcyBzZWN0aW9uLgpUaGVzZSBwYXJhbWV0ZXJzIGFyZSBzZXQgYW5kIGNhbiBiZSBvdmVycmlkZW4gdmlhIHRoZSBjb21tYW5kIGxpbmUgaWYga25pdHRpbmcgdmlhIFZhcmlEYXNoYm9hcmQgb3IgdGVybWluYWwuCkV4Y2VwdCBydW5OYW1lLCBhbGwgcGFyYW1ldGVycyBhcmUgcmVxdWlyZWQuCgpDaGFuZ2UgZGJVc2VyIHRvIHlvdXIgREIgdXNlciB3aGVuIHJ1bm5pbmcgZWRpdGluZyB0aGlzIGZpbGUgaW4gUlN0dWRpby4KCi0tPgpgYGAKYGBgez1odG1sfQo8c3R5bGU+CiAgICBib2R5IC5tYWluLWNvbnRhaW5lciB7CiAgICAgICAgbWF4LXdpZHRoOiA4MCU7CiAgICAgICAgbWFyZ2luLWxlZnQ6IGF1dG87CiAgICAgICAgbWFyZ2luLXJpZ2h0OiBhdXRvOwp9CgpoMSwgLmgxLCBoMiwgLmgyLCBoMywgLmgzIHsKICAgIG1hcmdpbi10b3A6IDg0cHg7Cn0KCjwvc3R5bGU+CmBgYApgYGB7ciBzZXR1cCwgZWNobz1GQUxTRSwgY2FjaGU9RkFMU0UsIG1lc3NhZ2U9RkFMU0V9CiMgbG9hZCBoZWxwZXIgRFBDRyBwYWNrYWdlCnJlcXVpcmUoZHBjZ1IpCgpyZXF1aXJlKGRwbHlyKQpyZXF1aXJlKGdsdWUpCnJlcXVpcmUoYml0NjQpCnJlcXVpcmUodGliYmxlKQpyZXF1aXJlKHBsb3RseSkKcmVxdWlyZSh2aXJpZGlzKQpyZXF1aXJlKFJDb2xvckJyZXdlcikKCm9wdGlvbnMod2lkdGggPSAxNjAwKQpvcHRpb25zKHdhcm4gPSAwLCBjYWNoZT1UUlVFLCBhdXRvZGVwPVRSVUUsIHNjaXBlbiA9IDk5OSkKCiMgQ29ubmVjdCB0byBEQiB0aGVuIHNldCB0aGUgZGVmYXVsdCBjb25uZWN0aW9uIGZvciByLW5vdGVib29rIGNodW5rcyBzbyB3ZSBkbyBub3QgaGF2ZSB0byBwcm92aWRlIGl0IGV2ZXJ5IHRpbWUgd2l0aCB7c3FsIGNvbm5lY3Rpb24gPSBjb25ufQpjb25uPC1kcGNnUjo6Y29ubmVjdChob3N0bmFtZT1wYXJhbXMkaG9zdG5hbWUscG9ydD1wYXJhbXMkZGJQb3J0LCB1c2VyID0gcGFyYW1zJGRiVXNlcikKCiMgY29ubmVjdGlvbiB0byBiZSB1c2VkIGJ5IHRoZSBzcWwgY2h1bmtzLCBkZWZhdWx0IHNpemUgb2YgdGhlIHBsb3RzCmtuaXRyOjpvcHRzX2NodW5rJHNldChjb25uZWN0aW9uID0gImNvbm4iLCBmaWcuaGVpZ2h0PTEwLCBmaWcud2lkdGg9MTIsIAogICAgICAgICAgICAgICAgICAgICAgY2FjaGU9RkFMU0UsCiAgICAgICAgICAgICAgICAgICAgICBhdXRvZGVwPVRSVUUsICAKICAgICAgICAgICAgICAgICAgICAgIGVycm9yID0gVFJVRSwgIyBkbyBub3QgaW50ZXJydXB0IGluIGNhc2Ugb2YgZXJyb3JzCiAgICAgICAgICAgICAgICAgICAgICBkZXYgPSAicmFnZ19wbmciLAogICAgICAgICAgICAgICAgICAgICAgY2xhc3Muc291cmNlID0gJ2ZvbGQtc2hvdycKICAgICAgICAgICAgICAgICAgICAgICkKCmBgYApfX18KPGNlbnRlcj4KIVtdKC4vUmVzb3VyY2VzL2RwYWNfbG9nby5wbmcpe3dpZHRoPTUwJX0KCgpfX18KCjxmb250IHNpemU9MjAgY29sb3I9IkJMVUUiPmByIHJtYXJrZG93bjo6bWV0YWRhdGEkdGl0bGVgIDwvZm9udD4KCl9fXwoKPC9jZW50ZXI+Cgo8Zm9udCBzaXplPTEwPgoKfCAgICAgICAgICAgICAgfCAgICAgICAgICAgICAgfAp8LS0tLS0tLS0tLS0tLSB8IC0tLS0tLS0tLS0tLS18CnxQcmVwYXJlZCBieTogIHwgYHIgcm1hcmtkb3duOjptZXRhZGF0YSRhdXRob3JgfAp8QXBwcm92ZWQgYnk6ICB8IExhdXJlbnQgRXllciB8CnxyZWZlcmVuY2U6ICAgIHwgR0FJQS1ERy1UTi1HRU4tS04tMDEzfAp8aXNzdWU6ICAgICAgICB8IDAxfAp8cmV2aXNpb246ICAgICB8IDF8CnxkYXRlOiAgICAgICAgIHwgYHIgU3lzLkRhdGUoKWB8CnxzdGF0dXM6ICAgICAgIHwgRHJhZnQgfAo8L2ZvbnQ+CgotLS0KCiMgRG9jdW1lbnQgSGlzdG9yeQoKPGZvbnQgc2l6ZT05PgoKfElzc3VlICB8IFJldmlzaW9uIHwgRGF0ZSAgICAgICAgfCBBdXRob3IgICB8IENvbW1lbnQgICAgICAgICB8CnwtLS0tLS0gfCAtLS0tLS0tLS18IC0tLS0tLS0tLS0tIHwtLS0tLS0tLS0gfC0tLS0tLS0tLS0tLS0tLS0tfAp8RCAgICAgIHwgICAgICAgMSAgfCAyMDIyLTAxLTEwICB8S04gICAgICAgIHwgSW5pdGlhbCB2ZXJzaW9uIHwKfEQgICAgICB8ICAgICAgIDIgIHwgMjAyMi0wMS0zMSAgfEtOICAgICAgICB8IFBMSmF2YSB0cyBvcGVyYXRvcnMgYWRkZWQgfAoKPC9mb250PgoKLS0tCgojIEludHJvZHVjdGlvbi4KClRoaXMgaXMgY29sbGVjdGlvbiBvZiBTUUwgcXVlcmllcyB0aGF0IERQQ0cgZW5kb3JzZXMgYW5kIHdpbGwgbWFpbnRhaW4gdGhlaXIgdXNhYmlsaXR5IGFzIGxvbmcgYXMgcG9zc2libGUuIApUaGlzIG5vdGVib29rIHdpdGggYWxsIHF1ZXJpZXMgYmVsb3cgYXJlIGFsc28gcGFydCBvZiBDb250aW51b3VzIEludGVncmF0aW9uIGVmZm9ydHMgdGhhdCBEUENHIHdpbGwgdHJlYXQgYXMgYW55IG90aGVyIHNvZnR3YXJlIHByb2plY3QuCgpRdWVyaWVzIGJlbG93IGFyZSBzZWxmLWNvbnRhaW5lZCBhbmQgbXVzdCB3b3JrIHdpdGggRFBDRyBHYWlhIGRhdGFiYXNlIGJhc2VkIG9uIFBvc3RncmVzLVhML1haL1RCYXNlLgpUaGV5IHNob3cgYWxsIGFzcGVjdHMgb2YgdGhlIHN5c3RlbSB1c2FnZSwgZnJvbSBpbnB1dCB0byByZXN1bHRzLCB2YWxpZGF0aW9uLCB2aXN1YWxpc2F0aW9uLgoKCiMgU2V0dXAsIFByZXJlcXVpc2lzdGllcwoKWW91IHNob3VsZCBoYXZlIHlvdXIgYCRIT01FLy5wZ3Bhc3NgIGZpbGUgc2V0IHVwIHdpdGggbm9uLXdvcmxkIHJlYWRhYmxlIG1hc2sgKDA2MDApLiBTaW1pbGFybHkgYXMgZm9yIHBzcWwgYW5kIG90aGVyIFBvc3RncmVTUUwgY2xpZW50cy4KZHBjZ1IgUiBwYWNrYWdlIGlzIGEgd3JwcGVyIGFyb3VuZCBQb3N0Z3JlcyBSIGNsaWVudCBhbmQgZ2l2ZXMgbnVtYmVyIG9mIFIgcHJpbWl0aXZlcyBmb3IgREIgaW50ZXJhY3Rpb24gYW5kIHZpc3VhbGlzYXRpb25zIGJhc2VkIG9uIE9NIG9iamVjdHMuCgojIERlcml2ZWQgVGltZXNlcmllcyAKCgpJbiBvcmRlciB0byBnZXQgZGVyaXZlZCB0aW1lc2VyaWVzIGZvciBhIHNlbGVjdGlvbiBvZiBzb3VyY2VpZHMsIHJ1bmlkIGFuZCBvcGVyYXRvciBuYW1lIHdlIGNhbjoKCmBgYHtzcWwgc3FsX3RzX2Rlcl8xfQpzZWxlY3QgKGRyM19vcHNfY3MzNi5vcF90ZXN0MShzb3VyY2VpZCwnUmVtb3ZlT3V0bGllcnNGYWludEFuZEJyaWdodE9wZXJhdG9yX0ZPVl9HJykpLiogZnJvbQooc2VsZWN0ICBzb3VyY2VpZCBmcm9tIGRyM19vcHNfY3MzNl9tdi52X2ZpbmFsX2RyM19leHBvcnRfaGVscGVyICBsaW1pdCA1KSA7CmBgYAoKVGhlIGZ1bmN0aW9uIHRha2VzIHJ1biBjb25maWd1cmF0aW9uLCBjYWNoZXMgaXQgZm9yIHRoZSBzZXNzaW9uIGFuZCBleGVjdXRlcyBWYXJpRnJhbWVvd3JrIHBpcGVsaW5lIGluIHBsSmF2YSBWTS4KCgojIFNhbXBsaW5nIAojIyBTYW1wbGUgZnJvbSBhIHNpbmdsZSB0YWJsZQoKVXNpbmcgKipfdGFibGVzYW1wbGVfKiogU1FMIGtleXdvcmQgd2Ugc2NhbiBwYWdlcyBvZiB0aGUgdGFibGVzIG9idGFpbmluZyBxdWFzaS1yYW5kb20gc2FtcGxpbmcuIApLZWVwIGluIG1pbmQgKipfdGFibGVzYW1wbGVfKiogaXMgYWx3YXlzIGFwcGxpZWQgKipiZWZvcmUqKiB0aGUgd2hlcmUgb3Igam9pbiBjbGF1c2VzLgoKRnJvbSBvdXIgc291cmNlIHRhYmxlCmBgYHtzcWwgc2FtcGxlXzF9Ci0tIGNhbGN1bGF0ZSByZXF1aXJlZCBwZXJjZW50YWdlIGJhc2VkIG9uIHRoZSBpbnB1dCBzZXQgc2l6ZS4KLS0gc2VsZWN0IHJvdW5kKCgxMF42KjEwMCkvKHNpemUpLDQpIHBlcmMgZnJvbSBjYXRhbG9nIHdoZXJlIGZuYW1lID0gJ0dBSUFfRFIzX0FMTCcKLS0gMC4wMzkyIGZvciAxTSBzYW1wbGUKCnNlbGVjdCAKICBzb3VyY2VpZCwgcl9mbHV4dG9NYWdWYWwoZ2ZsdXhtZWFuLGdldHplcm9wb2ludCgnR2FpYScsJ0dBSUFfUEhPVF9HJykpIC0tIGNvbnZlcnQgdG8gbWFnIHVzaW5nIFIgZnVuY3Rpb24KZnJvbSBzb3VyY2UgdGFibGVzYW1wbGUgYmVybm91bGxpKDAuMDM5MikKbGltaXQgMTBeNgoKYGBgCgkKdGFrZXMgMyBzZWNzLCBidXQgaXMgcXVhc2ktcmFuZG9tLgoKQ2FsY3VsYXRlZCBHIE1hZyBvbiB0aGUgZmx5IHVzaW5nIHBsUiBmdW5jdGlvbjoKCmBgYHtzcWwgc2FtcGxlLCBvdXRwdXQudmFyPSJyZXN1bHQifQpzZWxlY3Qgc291cmNlaWQsIHJfZmx1eHRvTWFnVmFsKGdmbHV4bWVhbixnZXR6ZXJvcG9pbnQoJ0dhaWEnLCdHQUlBX1BIT1RfRycpKSBnX21hZyAtLSBjb252ZXJ0IHRvIG1hZwpmcm9tIHNvdXJjZSB0YWJsZXNhbXBsZSBzeXN0ZW0oMC4wMzkyKQpsaW1pdCAxMF4yCmBgYAoKVGhpcyBpcyBtdWNoIHNsb3dlciwgYnV0IG1pZ2h0IHN0YXRpc3RpY2FsbHkgbW9yZSBzb3VuZCwgcmVsYXRlZCB0byB0aGUgc2FtcGxpbmcgbWV0aG9kIChCZXJub3VsbGkpIDoKCmBgYHtzcWwgc2FtcGxlXzIsIG91dHB1dC52YXI9InJlc3VsdCJ9CiBzZWxlY3Qgc291cmNlaWQsIHJfZmx1eHRvTWFnVmFsKGdmbHV4bWVhbixnZXR6ZXJvcG9pbnQoJ0dhaWEnLCdHQUlBX1BIT1RfRycpKSAgZ19tYWcgLS0gY29udmVydCB0byBtYWcKZnJvbSBzb3VyY2UgdGFibGVzYW1wbGUgYmVybm91bGxpKDAuMDM5MikKbGltaXQgMTBeMgpgYGAKCkJvdGggbWV0aG9kcyBhcmUgdmVyeSBJTyBpbnRlbnNpdmUuCgoKIyBTcGVjdHJhIGhhbmRsaW5nCgpJbiBvcmRlciB0byBmZXRjaCBCUC9SUCBzcGVjdHJhIGZvciBhIHNpbmdsZSBzb3VyY2UgZXhlY3V0ZToKCmBgYHtzcWwgc3BlY3RyYV9zaW5nbGVfc291cmNlfQpzZWxlY3QKc291cmNlaWQsCmFscGhhLCBhbHBoYXN0YXJlcnJvciwgZGVsdGEsIGRlbHRhZXJyb3IsIHZhcnBpLCB2YXJwaWVycm9yLCBtdWFscGhhc3RhciwgbXVhbHBoYXN0YXJlcnJvciwgbXVkZWx0YSwgbXVkZWx0YWVycm9yLCByYWRpYWx2ZWxvY2l0eSwgcmFkaWFsdmVsb2NpdHllcnJvciwKICByX3BzZXVkb193YXZlbGVuZ3RoKAogKGJwcnApLmJwcmVmYWxwb3MKICAsNTAwLDMwKSBhcyBwc2V1ZG9fd2F2ZWxlbmd0aAogLChicHJwKS5icHNwZWN0cmFsc2hhcGUKICwoYnBycCkuYnBvYnN0aW1lCmZyb20gZHIzX29wc19jczM2LnRzc3BlY3RyYQpqb2luIHNvdXJjZSB1c2luZyAoc291cmNlaWQpCmpvaW4gbGF0ZXJhbCAoc2VsZWN0ICBnZXRzcGVjdHJhKHNwZWMpIGJwcnApIGJwcnAgIG9uIHRydWUKd2hlcmUKIGNhdGFsb2dpZCA9IGdldG1haW5jYXRhbG9nKCkKYW5kIHNvdXJjZWlkID0gMjkyNjgyNTQzMTE3MDA5MzE4NAoKYGBgCgpDdXJyZW50bHkgd2UgZG8gbm90IHN1cHBvcnQgbXVsdGlkaW1lbnNpb25hbCBzZXRzIG9mIHNwZWN0cmEgcmV0dXJuZWQ6IHRoZSBmdW5jdGlvbiByZXR1cm5zIHVubmVzdGVkIHNwZWN0cmEgYWxyZWFkeSwgdGhhdCBtaWdodCBuZWVkIG9yZGVyaW5nIGlmIG1vcmUgc291cmNlcyBhcmUgaW52b2x2ZWQuCgoKIyBBcHBlbmRpeDogREIgZnVuY3Rpb25zIGF2YWlsYWJsZQoKIyBBcHBlbmRpeDog</div>
 
 
 </div>
