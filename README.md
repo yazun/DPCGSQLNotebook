@@ -8,4 +8,4 @@ This notebook with all queries below are also part of Continuous Integration eff
 Queries below are self-contained and must work with DPCG Gaia database based on Postgres-XL/XZ/TBase.
 They show all aspects of the system usage, from input to results, validation, visualisation.
 
-For usage and comments use dpcg-database DPCG Mattermost channel.
+**For usage and comments use dpcg-database DPCG Mattermost channel.**
