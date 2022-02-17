@@ -13,7 +13,9 @@ output:
     theme: spacelab
     highlight: pygments
     as.iframe: yes
+    code_download: true
   html_notebook:
+    code_download: true
     as.iframe: yes
     code_folding: show
     fig_height: 10
@@ -52,12 +54,12 @@ Change dbUser to your DB user when running editing this file in RStudio.
 }
 
 h1, .h1, h2, .h2, h3, .h3 {
-    margin-top: 84px;
+    margin-top: 74px;
 }
 
 </style>
 ```
-```{r setup, echo=FALSE, cache=FALSE, message=FALSE}
+```{r setup, include=FALSE, echo=FALSE, cache=FALSE, message=FALSE}
 # load helper DPCG package
 require(dpcgR)
 
@@ -70,18 +72,38 @@ require(viridis)
 require(RColorBrewer)
 
 options(width = 1600)
-options(warn = 0, cache=TRUE, autodep=TRUE, scipen = 999)
+options(warn = 0, cache=FALSE, autodep=TRUE, scipen = 999)
 
 # Connect to DB then set the default connection for r-notebook chunks so we do not have to provide it every time with {sql connection = conn}
 conn<-dpcgR::connect(hostname=params$hostname,port=params$dbPort, user = params$dbUser)
 
+all_times <- list() 
+knitr::knit_hooks$set(time_it = local({
+  now <- NULL
+  function(before, options, envir) {
+    if (before) {
+      # record the current time before each chunk
+      now <<- Sys.time()
+    } else {
+      # calculate the time difference after a chunk
+      res <- difftime(Sys.time(), now)
+      # return a character string to show the time
+      # paste("Time for this code chunk to run:", res)
+      all_times[[options$label]] <<- res
+      
+    }
+  }
+}))
 # connection to be used by the sql chunks, default size of the plots
 knitr::opts_chunk$set(connection = "conn", fig.height=10, fig.width=12, 
                       cache=FALSE,
                       autodep=TRUE,  
                       error = TRUE, # do not interrupt in case of errors
                       dev = "ragg_png",
-                      class.source = 'fold-show'
+                      class.source = 'fold-show',
+                      time_it = TRUE
+                      # attr.source='.numberLines'
+                      
                       )
 
 ```
@@ -98,7 +120,7 @@ ___
 
 </center>
 
-<font size=10>
+<font size=5>
 
 |              |              |
 |------------- | -------------|
@@ -115,7 +137,7 @@ ___
 
 # Document History
 
-<font size=9>
+<font size=4>
 
 |Issue  | Revision | Date        | Author   | Comment         |
 |------ | ---------| ----------- |--------- |-----------------|
@@ -129,7 +151,10 @@ ___
 # Introduction.
 
 This is collection of SQL queries that DPCG endorses and will maintain their usability as long as possible. 
-This notebook with all queries below are also part of Continuous Integration efforts that DPCG will treat as any other software project.
+You can copy-paste and adapt these queries for your needs. 
+As usual, in case of doubt, you can ask at [DPCG database channel](https://gaiamattermost.isdc.unige.ch/dpcg/channels/dpcg-database).
+
+This notebook with all queries below are also part of Continuous Integration efforts that DPCG will treat as any other software project, intercepting breaking changes or performance regressions.
 
 Queries below are self-contained and must work with DPCG Gaia database based on Postgres-XL/XZ/TBase.
 They show all aspects of the system usage, from input to results, validation, visualisation.
@@ -138,16 +163,30 @@ They show all aspects of the system usage, from input to results, validation, vi
 # Setup, Prerequisisties
 
 You should have your `$HOME/.pgpass` file set up with non-world readable mask (0600). Similarly as for psql and other PostgreSQL clients.
-dpcgR R package is a wrpper around Postgres R client and gives number of R primitives for DB interaction and visualisations based on OM objects.
+dpcgR R package is a wrpper around Postgres R client and gives number of R primitives for DB interaction and visualisations based on the VariOM definitions.
+
+## Useful SQL options to set
+
+There are few useful options to set before starting each interactive SQL session.
+We advise to call the code below in the .psqlrc or everytime you start a session (also in a client code) as defulat settings are more suitable for massive processing perfromaed with the VariFramwork.
+
+```{sql sql_setup}
+-- set search path to include _mv schema for convenience
+set search_path to dr3_ops_cs36, dr3_ops_cs36_mv, public;
+```
+```{sql setup_for_user_queries}
+-- enable some options that iusually speed up analytical queries (i.e. having joins)
+select setDPCGAnalytics();
+
+```
 
 # Derived Timeseries 
-
 
 In order to get derived timeseries for a selection of sourceids, runid and operator name we can:
 
 ```{sql sql_ts_der_1}
-select (dr3_ops_cs36.op_test1(sourceid,'RemoveOutliersFaintAndBrightOperator_FOV_G')).* from
-(select  sourceid from dr3_ops_cs36_mv.v_final_dr3_export_helper  limit 5) ;
+select (dr3_ops_cs36.op_test1(sourceid,'RemoveOutliersFaintAndBrightOperator_FOV_G')).* from 
+(select  sourceid from dr3_ops_cs36_mv.v_final_dr3_export_helper  limit 5)  ;
 ```
 
 The function takes run configuration, caches it for the session and executes VariFrameowrk pipeline in plJava VM.
@@ -192,6 +231,43 @@ limit 10^2
 
 Both methods are very IO intensive.
 
+# Derived catalogs with results
+
+## With supervised classification results.
+```{sql derived_supervised_classificaiton_results9}
+select 
+  sourceid, 
+  (avals(bestclassificationestimates))[1]::float8 as prob, 
+  getAttributesStrForPattern(getcatalogname(dcatalogid), 'primaryVarType', externalattributese) as catalogtype 
+from 
+  supervisedclassificationresult s join v_source_catalog_derived using (catalogid,sourceid) 
+where 
+runid = 90002 
+and catalogid=getmaincatalog() 
+and dcatalogid = getcatalogid('DR3_ALL_XM_MERGED_ALL_V8.3') 
+and classifierid=getclassifierid('CD_NOV20_META1') 
+limit 10
+
+```
+
+# SOS queries
+
+# List of SOS views with fields from respective packages
+
+We have specific SOS tables that each package might use at your convenience:
+
+```{sql list_sos_tables}
+select  table_name "SOS table name" from information_schema.tables where table_name ~ '^v_sos_' order by 1;
+
+```
+Which should be used as usual with runid (the `catalogid` is not needed):
+For example to check AGN attributes for a specific run:
+
+```{sql sos_agn_1}
+select * from v_sos_agnattributes 
+  where runid = 3852 
+  limit 5
+```
 
 # Spectra handling
 
@@ -214,10 +290,30 @@ where
 and sourceid = 2926825431170093184
 
 ```
-
+The heart of this query is `getspectra` function which translates from compressed spectra form to Gaia transitid rows.
 Currently we do not support multidimensional sets of spectra returned: the function returns unnested spectra already, that might need ordering if more sources are involved.
+
+# Analytical materialized tables
+
+
+At each cycle we create number of tables that are flat representations of results, usually including basci information about the Sources, with source results (i.e. GVD), timeseries results, classification results for convenient check of the results.
+Such queries are made only for major runs if no requested by users.
+
+Information about such materialized tables that were created by the _parallel script_ is kept in the `mv_table_metainfo` and one can query
+
+## Main materialized tables
+
+
+## Environment calculation 
+
+
+# Timing summary
+
+```{r}
+print(all_times)
+```
 
 
 # Appendix: DB functions available
 
-# Appendix: 
+# Appendix: Parallel script
